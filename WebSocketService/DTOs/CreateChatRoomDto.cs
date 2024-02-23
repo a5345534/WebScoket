@@ -6,9 +6,11 @@ namespace WebSocketService.DTOs
     {
         public DtoType dtoType { get; } = DtoType.CreateChatRoom;
         public string chatRoomId { get; }
-        public CreateChatRoomDto(string chatRoomId)
+        public List<UserDto> users { get; }
+        public CreateChatRoomDto(string chatRoomId,List<UserDto> Users)
         {
             this.chatRoomId = chatRoomId;
+            this.users = Users;
         }
     }
 }

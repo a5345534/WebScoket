@@ -21,11 +21,11 @@ namespace WebSocketService
             WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();//接收WebSocket
             var userName = context.Request.Query["userName"].ToString();
             var newUser = new ConnectedUser(userName, webSocket);//新用戶成立
-            _programUsers.TryAdd(newUser.id, newUser); // 將新的使用者加入使用者列表            
-            newUser.ListenMessage(new ConnectingUserDto());//將唯一ID傳回前端            
-            foreach (var room in _chatRooms)
+            _programUsers.TryAdd(newUser.id, newUser); // 將新的使用者加入使用者列表   
+            foreach (var roomPair in _chatRooms)
             {
-                newUser.ListenMessage(new CreateChatRoomDto(room.Value.chatRoomId));//將現有房間回傳新用戶
+                var users = GetChatRoomUsers(roomPair.Value);
+                newUser.ListenMessage(new CreateChatRoomDto(roomPair.Value.chatRoomId, users));//將現有房間回傳新用戶
             }
             Task.WaitAll();
             try
@@ -53,6 +53,11 @@ namespace WebSocketService
                             _chatRooms.TryGetValue(joinChatRoomDto.chatRoomId, out ChatRoom joinChatRoom);
                             joinChatRoom.roomUsers.TryAdd(newUser.id, newUser);
                             await newUser.ListenMessage(joinChatRoomDto);
+                            List<UserDto> users = GetChatRoomUsers(joinChatRoom);
+                            await BroadcastMessage(
+                                new UpdateChatRoomDto(joinChatRoom.chatRoomId, users),
+                                joinChatRoom.roomUsers
+                                );
                             var joinRoomMsg = new RecivedMessageDto(joinChatRoomDto.chatRoomId, $"{newUser.name}加入聊天室!");
                             var joinBroadcastMessage = new BroadcastMessageDto("系統訊息", joinRoomMsg);
                             await BroadcastMessage(joinBroadcastMessage, joinChatRoom.roomUsers);
@@ -64,13 +69,19 @@ namespace WebSocketService
                             var leaveRoomMsg = new RecivedMessageDto(leaveChatRoom.chatRoomId, $"{newUser.name}離開聊天室!");
                             var leaveBroadcastMessage = new BroadcastMessageDto("系統訊息", leaveRoomMsg);
                             await BroadcastMessage(leaveBroadcastMessage, leaveChatRoom.roomUsers);
-                            leaveChatRoom.roomUsers.TryRemove(newUser.id, out newUser);
+                            LeaveChatRoomAndBroadcast(leaveChatRoom, newUser);
                             break;
                         case DtoType.RecivedMessage:
                             RecivedMessageDto message = JsonSerializer.Deserialize<RecivedMessageDto>(reciveJson);
                             _chatRooms.TryGetValue(message.chatRoomId, out var messageRoom);
                             var broadcastMessage = new BroadcastMessageDto(newUser.name, message);
                             await BroadcastMessage(broadcastMessage, messageRoom.roomUsers); // 将消息广播给其他所有客户端
+                            break;
+                        case DtoType.UpdateChatRoom:
+                            break;
+                        case DtoType.CloseChatRoom:
+                            CloseChatRoomDto closeChatRoomDto = JsonSerializer.Deserialize<CloseChatRoomDto>(reciveJson);                            
+                            await CloseChatRoom(closeChatRoomDto);
                             break;
                         case DtoType.Error:
                             break;
@@ -93,6 +104,10 @@ namespace WebSocketService
             }
             finally
             {
+                foreach (var room in _chatRooms.Values)
+                {
+                    LeaveChatRoomAndBroadcast(room, newUser);
+                }
                 newUser.heartbeatTimer.Stop();
                 newUser.heartbeatTimer.Dispose();
                 _programUsers.TryRemove(newUser.id, out newUser); newUser.webSocket.Abort();
@@ -100,6 +115,30 @@ namespace WebSocketService
                 Console.WriteLine($"{newUser.name}已斷線");
 
             }
+        }
+
+        private async void LeaveChatRoomAndBroadcast(ChatRoom room, ConnectedUser user)
+        {
+            room.roomUsers.TryRemove(user.id, out user);
+            List<UserDto> existingUsers = new List<UserDto>();
+            foreach (var existingUser in room.roomUsers.Values)
+            {
+                existingUsers.Add(new UserDto(existingUser.id, existingUser.name));
+            }
+            await BroadcastMessage(
+                new UpdateChatRoomDto(room.chatRoomId, existingUsers)
+                , room.roomUsers);
+        }
+
+        private static List<UserDto> GetChatRoomUsers(ChatRoom joinChatRoom)
+        {
+            var users = new List<UserDto>();
+            foreach (var userPair in joinChatRoom.roomUsers)
+            {
+                users.Add(new UserDto(userPair.Value.id, userPair.Value.name));
+            }
+
+            return users;
         }
 
         private async Task SendPingTo(ConnectedUser newUser)
@@ -115,9 +154,29 @@ namespace WebSocketService
         {
             ChatRoom chatRoom = new ChatRoom();
             _chatRooms.Add(chatRoom.chatRoomId, chatRoom);
-            await BroadcastMessage(new CreateChatRoomDto(chatRoom.chatRoomId), _programUsers);//通知所有人房間成立了
+            await BroadcastMessage(new CreateChatRoomDto(chatRoom.chatRoomId, new List<UserDto>()), _programUsers);//通知所有人房間成立了
         }
-        private async Task CloseChatRoom() { }
+        private async Task CloseChatRoom(CloseChatRoomDto closeChatRoomDto)
+        {
+            try
+            {
+                if(!_chatRooms.TryGetValue(closeChatRoomDto.chatRoomId, out var closeRoom))
+                {
+                    return;
+                }
+                
+                if (closeRoom.roomUsers.Count == 0)
+                {
+                    _chatRooms.Remove(closeRoom.chatRoomId);
+                    BroadcastMessage(closeChatRoomDto, _programUsers);
+                }
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
         private async Task BroadcastMessage<T>(T masterDto, ConcurrentDictionary<string, ConnectedUser> conUsers) where T : MasterDto
         {
             var messageDtoJson = JsonSerializer.Serialize(masterDto);

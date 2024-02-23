@@ -8,6 +8,8 @@
         RecivedMessage = 3,
         LeaveChatRoom = 4,
         BroadcastMessage = 5,
+        UpdateChatRoom = 6,
+        CloseChatRoom = 7,
         PingDto = 51,
         PongDto = 52,
         ProgramClose = 90,

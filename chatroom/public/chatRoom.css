@@ -4,6 +4,25 @@
     box-sizing: border-box;
 }
 
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+    background: #888;
+}
+
+    /* Handle on hover */
+    ::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
 input:focus::-webkit-input-placeholder {
     color: transparent;
 }
@@ -48,7 +67,7 @@ input:focus {
         width: 50px;
         height: 50px;
         margin: 0 auto;
-        margin-bottom: 50px;
+        margin-bottom: 10px;
         background-color: #fff;
         border-radius: 50%;
         overflow: hidden;
@@ -60,11 +79,14 @@ input:focus {
 
 .chat_icon {
     width: 100%;
+    height: calc(100% - 100px);
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .myIcon {
-    padding: 20px;
-    text-align: center;
+    padding: 10px;
+    text-align: left;
     cursor: pointer;
 }
 
@@ -193,8 +215,14 @@ input:focus {
     text-overflow: ellipsis;
 }
 
+.floatRT {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+}
+
 .chat_box {
-    width: 50%;
+    width: 100%;
     height: 100%;
     /* overflow-y: scroll; */
     background-color: #f1f1f1;
@@ -237,6 +265,19 @@ input:focus {
     z-index: 1;
 }
 
+.btn_block ,.userName {
+    text-align-last: center;
+    border-radius: 5px;
+}
+
+    .btn_block:hover {
+        background-color: #888888;
+    }
+
+    .btn_block > .btn {
+        padding:2px;
+    }
+
 .iconTag:hover .icon_block {
     opacity: 1;
     z-index: 1;
@@ -254,42 +295,6 @@ input:focus {
     .emoji_icon:hover {
         background-color: #888888;
     }
-
-.me_block {
-    width: 20%;
-    height: 100%;
-    background-color: #fff;
-    padding: 20px 10px;
-    overflow-y: scroll;
-}
-
-    .me_block .myHeadPhoto {
-        width: 100px;
-        height: 100px;
-        border-radius: 50%;
-        margin: 0 auto;
-        overflow: hidden;
-    }
-
-.myHeadPhoto img {
-    width: 100%;
-}
-
-.me_block .myName {
-    width: 100%;
-    font-size: 24px;
-    color: #222222;
-    text-align: center;
-    margin-top: 15px;
-}
-
-.me_block .myTitle {
-    width: 100%;
-    font-size: 16px;
-    color: #777777;
-    text-align: center;
-    margin-top: 5px;
-}
 
 .me_list {
     width: 100%;
@@ -368,7 +373,7 @@ input:focus {
 }
 
 .head {
-    color:black;
+    color: black;
     width: 50px;
     height: 50px;
     border-radius: 50%;

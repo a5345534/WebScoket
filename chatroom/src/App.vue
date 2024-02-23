@@ -1,127 +1,91 @@
 <template>
-    <div class="chat_container">
-        <div class="chat_icon_block">
-            <div class="myHead">
-                <img src="img/me/Johnny.png" alt="">
-            </div>
-            <div class="chat_icon">
-                <div class="myIcon active">
-                    <i class="fa fa-comment msg_Y"></i>
+    <template v-if="connectState">
+        <div class="chat_container">
+            <div class="chat_icon_block">
+                <div class="myHead">
+                    <img src="../public/imgs/DjV5mx-rLjR.gif" alt="">
                 </div>
-                <div class="myIcon">
-                    <i class="fa fa-user msg_N"></i>
-                </div>
-                <div class="myIcon">
-                    <i class="fa fa-users msg_N"></i>
-                </div>
-                <div class="myIcon">
-                    <i class="fa fa-envelope msg_N"></i>
-                </div>
-                <div class="myIcon">
-                    <i class="fa fa-cog msg_N"></i>
-                </div>
-                <div class="myIcon">
-                    <i class="fa fa-sign-out msg_N"></i>
-                </div>
-            </div>
-        </div>
-        <div id="myChatList" class="chat_list">
-            <div class="chatListTag" v-for="room in livingRooms" :key="room.chatRoomId" @click="changeChatRoom(room)">
-                <div class="head"><img src="img/friends/Alpha_Team.png" alt=""></div>
-                <div class="mytext">
-                    <div class="name">{{room.chatRoomId}}</div>
-                    <div class="dec">{{room.chatRoomId}}</div>
-                </div>
-                <div class="msg_num">3</div>
-                <button @click="joinChatRoom(room.chatRoomId)">加入</button>
-                <button @click="leaveChatRoom(room.chatRoomId)">離開</button>
-            </div>
-            <button @click="createChatRoom">開新聊天室</button>
-        </div>
-        <div class="chat_box">
-            <div id="chatRoom" class="chat_message">
-                <div class="message_row other-message">
-                    <div v-for="rowMessage in currentRoom.messages" :key="rowMessage.message" class="message-content">
-                        <!--<img class="head" src="img/friends/David.png" alt="">-->
-                        <label class="head">{{ rowMessage.massengerSenderName }}</label>
-                        <div class="message-text">{{ rowMessage.message }}</div>
-                        <div class="message-time">{{ rowMessage.messageTimestamp }}</div>
-                    </div>
-                </div>
-            </div>
-            <div class="chat_input">
-                <div class="myIcon2 iconTag">
-                    <i class="fa fa-smile-o ipt_icon"></i>
-                    <div class="icon_block">
-                        <div class="emoji_icon">
-                            <img src="img/emoji/cry.png" alt="">
-                        </div>
-                        <div class="emoji_icon">
-                            <img src="img/emoji/cry2.png" alt="">
-                        </div>
-                        <div class="emoji_icon">
-                            <img src="img/emoji/I_dont_know.jpg" alt="">
-                        </div>
-                        <div class="emoji_icon">
-                            <img src="img/emoji/like.png" alt="">
-                        </div>
-                        <div class="emoji_icon">
-                            <img src="img/emoji/like2.png" alt="">
-                        </div>
-                        <div class="emoji_icon">
-                            <img src="img/emoji/omg.png" alt="">
-                        </div>
-                        <div class="emoji_icon">
-                            <img src="img/emoji/robot-face.png" alt="">
-                        </div>
-                        <div class="emoji_icon">
-                            <img src="img/emoji/smile.png" alt="">
-                        </div>
-                        <div class="emoji_icon">
-                            <img src="img/emoji/strange.png" alt="">
-                        </div>
-                        <div class="emoji_icon">
-                            <img src="img/emoji/what.jpg" alt="">
-                        </div>
-                        <div class="emoji_icon">
-                            <img src="img/emoji/wow.png" alt="">
+                <div class="userName">{{userName}}</div>
+                <div class="chat_icon">
+                    <div v-for="room in livingRooms" class="myIcon" style="position :relative" @click="changeChatRoom(room)">
+                        <div class="btn_block" @click="closeChatRoom(room)"><font-awesome-icon icon="xmark" class="btn floatRT" style="color:red;" /></div>
+                        <span style=" white-space: nowrap;">{{room.chatRoomId}}</span>
+                        <div>
+                            <template v-if="room.isJoined">
+                                <div><font-awesome-icon icon="user-secret" style="color: #63E6BE;" />{{room.users.length}}</div>
+                                <div class="btn_block" @click="leaveChatRoom(room.chatRoomId)"><font-awesome-icon icon="xmark" class="btn" /></div>
+                            </template>
+                            <template v-else>
+                                <div class="btn_block" @click="joinChatRoom(room.chatRoomId)"><font-awesome-icon icon="check" class="btn" /></div>
+                            </template>
                         </div>
                     </div>
                 </div>
-                <div class="myIcon2">
-                    <img src="img/annex.png" alt="">
-                </div>
-                <input v-model="thisMessage.message" @keydown.enter="sendMessage" class="sendMsg" type="text"
-                       placeholder="請輸入訊息">
-                <div class="myIcon2">
-                    <i class="fa fa-share send_icon"></i>
+                <div class="btn_block" @click="createChatRoom">
+                    <font-awesome-icon icon="plus" class="btn" />
                 </div>
             </div>
+            <div id="myChatList" class="chat_list">
+                <div class="chatListTag" v-for="user in currentRoom.users" :key="user.userId">
+                    <div class="head"><img src="../public/imgs/DjV5mx-rLjR.gif" alt=""></div>
+                    <div class="mytext">
+                        <div class="name">{{user.userName}}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="chat_box">
+                <div id="chatRoom" class="chat_message" ref="chatContainer">
+                    <div class="message_row other-message">
+                        <div v-for="rowMessage in currentRoom.messages" :key="rowMessage.message" class="message-content">
+                            <img class="head" src="../public/imgs/DjV5mx-rLjR.gif" alt="">
+                            <label class="head">{{ rowMessage.massengerSenderName }}</label>
+                            <div class="message-text">{{ rowMessage.message }}</div>
+                            <div class="message-time">{{ rowMessage.messageTimestamp }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat_input">
+                    <input v-model="thisMessage.message" @keydown.enter="sendMessage" class="sendMsg" type="text"
+                           placeholder="請輸入訊息">
+                    <div class="myIcon2">
+                        <i class="fa fa-share send_icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="btn_block" @click="disconnect"><font-awesome-icon icon="xmark" class="btn floatRT" style="color:red;" /></div>
         </div>
-        <div class="me_block">
-            <label style="color:black">{{ program_ws !== null ? program_ws.readyState : 2 }}</label>
-            <input v-model="userName" type="text" />
-            <button @click="createConnect">連線系統</button>
-            <button @click="disconnect">斷開系統</button>
+    </template>
+    <template v-else>
+        <div>
+            <div class="login">
+                <input type="text" v-model="userName" placeholder="Username">
+                <!--<input type="password" placeholder="Password">-->
+                <button @click="createConnect">Login</button>
+            </div>
         </div>
-    </div>
+    </template>
 </template>
 <script>
     import('../../chatroom/public/chatRoom.css');
+    import('../../chatroom/public/Login.css');
+    import { API_URL } from '../src/urlPathRouter.js';
     export default {
         data() {
             return {
+                connectState: false,
+                images: [`DjV5mx-qma7.gif`, `DjV5mx-09NQ.gif`, `DjV5mx-rLjR.gif`],
+                headerAddress: `DjV5mx-qma7.gif`,
                 userName: null,
-                wsUrl: 'ws://localhost:5000/ws',
+                wsUrl: `ws://${API_URL}/ws`,
                 program_ws: null,
-                thisMessage: {dtoType: 3, chatRoomId: null, message: null},
+                thisMessage: { dtoType: 3, chatRoomId: null, message: null },
                 livingRooms: [],
-                joinedRooms: [],
                 currentRoom: { messages: [] },
                 pongDto: { dtoType: 52 },
                 createChatRoomDto: { dtoType: 1 },
                 joinChatRoomDto: { dtoType: 2, chatRoomId: null },
                 leaveChatRoomDto: { dtoType: 4, chatRoomId: null },
+                closeChatRoomDto: { dtoType: 7, chatRoomId: null },
             }
         },
         mounted() {
@@ -138,7 +102,8 @@
                     var connectString = `${app.wsUrl}/newConnecting?userName=${app.userName}`;
                     app.program_ws = await new WebSocket(connectString);
                     app.program_ws.onopen = function (event) {
-                        console.log("連線成功",event);
+                        app.connectState = true;
+                        console.log("連線成功", event);
                     };
                     app.program_ws.onmessage = function (event) {
                         var reciveDto = JSON.parse(event.data);
@@ -150,18 +115,27 @@
                                 break;
                             case 2:
                                 var joiningRoom = app.livingRooms.find(r => r.chatRoomId === reciveDto.chatRoomId);
-                                app.thisMessage.chatRoomId = reciveDto.chatRoomId;
+                                joiningRoom.isJoined = true;
                                 joiningRoom.messages = [];
-                                app.joinedRooms.push(joiningRoom);
                                 break;
                             case 5:
-                                joiningRoom.messages.push(reciveDto);
+                                var messageRoom = app.livingRooms.find(r => r.chatRoomId === reciveDto.chatRoomId);
+                                messageRoom.messages.push(reciveDto);
+                                app.scrollToBottom();
                                 break;
                             case 4:
-                                var leavingRoom = app.joinedRooms.find(r => r.chatRoomId === reciveDto.chatRoomId);
-                                app.thisMessage.chatRoomId = null;
-                                var index = app.joinedRooms.indexOf(leavingRoom);
-                                app.joinedRooms.splice(index, 1);
+                                var leavingRoom = app.livingRooms.find(r => r.chatRoomId === reciveDto.chatRoomId);
+                                leavingRoom.isJoined = false;
+                                break;
+                            case 6:
+                                var findRoom = app.livingRooms.find(r => r.chatRoomId === reciveDto.chatRoomId);
+                                findRoom.users = reciveDto.users;
+                                break;
+                            case 7:
+                                //var findRoom = app.livingRooms.find(r => r.chatRoomId === reciveDto.chatRoomId);
+                                var index = app.livingRooms.findIndex(r => r.chatRoomId === reciveDto.chatRoomId);
+                                app.livingRooms.splice(index, 1);
+                                alert(`聊天室${findRoom.chatRoomId}被關閉`);
                                 break;
                             case 51:
                                 console.log('收到ping');
@@ -171,7 +145,8 @@
                         }
                     };
                     app.program_ws.onclose = function (event) {
-                        console.log('連線關閉',event);
+                        console.log('連線關閉', event);
+                        app.connectState = false;
                     };
                     app.program_ws.onerror = function (error) {
                         alert('WebSocket error: ', error);
@@ -179,6 +154,14 @@
                 } catch (e) {
                     console.log("連線開啟失敗!!");
                 }
+            },
+            scrollToBottom() {
+                this.$nextTick(() => {
+                    const chatContainer = this.$refs.chatContainer;
+                    if (chatContainer) {
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                    }
+                });
             },
             sendMessage() {
                 var app = this;
@@ -224,6 +207,15 @@
                 var app = this;
                 app.currentRoom = room;
                 app.thisMessage.chatRoomId = room.chatRoomId;
+            },
+            closeChatRoom(room) {
+                try {
+                    var app = this;
+                    app.closeChatRoomDto.chatRoomId = room.chatRoomId;
+                    app.program_ws.send(JSON.stringify(app.closeChatRoomDto));
+                } catch (e) {
+                    alert("關閉聊天室失敗");
+                }
             },
         },
     }
