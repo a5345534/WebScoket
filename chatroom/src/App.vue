@@ -7,7 +7,7 @@
                 </div>
                 <div class="userName">{{userName}}</div>
                 <div class="chat_icon">
-                    <div v-for="room in livingRooms" class="myIcon" style="position :relative" @click="changeChatRoom(room)">
+                    <div v-for="room in livingRooms" :key="room.chatRoomId" class="myIcon" style="position :relative" @click="changeChatRoom(room)">
                         <div class="btn_block" @click="closeChatRoom(room)"><font-awesome-icon icon="xmark" class="btn floatRT" style="color:red;" /></div>
                         <span style=" white-space: nowrap;">{{room.chatRoomId}}</span>
                         <div>

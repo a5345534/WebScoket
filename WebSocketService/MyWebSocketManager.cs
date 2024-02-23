@@ -66,9 +66,7 @@ namespace WebSocketService
                             LeaveChatRoomDto leaveChatRoomDto = JsonSerializer.Deserialize<LeaveChatRoomDto>(reciveJson);
                             _chatRooms.TryGetValue(leaveChatRoomDto.chatRoomId, out ChatRoom leaveChatRoom);
                             await newUser.ListenMessage(leaveChatRoomDto);
-                            var leaveRoomMsg = new RecivedMessageDto(leaveChatRoom.chatRoomId, $"{newUser.name}離開聊天室!");
-                            var leaveBroadcastMessage = new BroadcastMessageDto("系統訊息", leaveRoomMsg);
-                            await BroadcastMessage(leaveBroadcastMessage, leaveChatRoom.roomUsers);
+                            await BroadcastLeaveMessage(newUser, leaveChatRoom);
                             LeaveChatRoomAndBroadcast(leaveChatRoom, newUser);
                             break;
                         case DtoType.RecivedMessage:
@@ -80,7 +78,7 @@ namespace WebSocketService
                         case DtoType.UpdateChatRoom:
                             break;
                         case DtoType.CloseChatRoom:
-                            CloseChatRoomDto closeChatRoomDto = JsonSerializer.Deserialize<CloseChatRoomDto>(reciveJson);                            
+                            CloseChatRoomDto closeChatRoomDto = JsonSerializer.Deserialize<CloseChatRoomDto>(reciveJson);
                             await CloseChatRoom(closeChatRoomDto);
                             break;
                         case DtoType.Error:
@@ -105,15 +103,30 @@ namespace WebSocketService
             finally
             {
                 foreach (var room in _chatRooms.Values)
-                {
+                {                    
                     LeaveChatRoomAndBroadcast(room, newUser);
                 }
                 newUser.heartbeatTimer.Stop();
                 newUser.heartbeatTimer.Dispose();
-                _programUsers.TryRemove(newUser.id, out newUser); newUser.webSocket.Abort();
+                _programUsers.TryRemove(newUser.id, out newUser);
+                newUser.webSocket.Abort();
                 webSocket.Dispose();
                 Console.WriteLine($"{newUser.name}已斷線");
 
+            }
+        }
+
+        private async Task BroadcastLeaveMessage(ConnectedUser? newUser, ChatRoom leaveChatRoom)
+        {
+            try
+            {
+                var leaveRoomMsg = new RecivedMessageDto(leaveChatRoom.chatRoomId, $"{newUser.name}離開聊天室!");
+                var leaveBroadcastMessage = new BroadcastMessageDto("系統訊息", leaveRoomMsg);
+                await BroadcastMessage(leaveBroadcastMessage, leaveChatRoom.roomUsers);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("BroadcastLeaveMessage方法出錯");
             }
         }
 
@@ -128,6 +141,7 @@ namespace WebSocketService
             await BroadcastMessage(
                 new UpdateChatRoomDto(room.chatRoomId, existingUsers)
                 , room.roomUsers);
+            await BroadcastLeaveMessage(user,room);
         }
 
         private static List<UserDto> GetChatRoomUsers(ChatRoom joinChatRoom)
@@ -160,11 +174,11 @@ namespace WebSocketService
         {
             try
             {
-                if(!_chatRooms.TryGetValue(closeChatRoomDto.chatRoomId, out var closeRoom))
+                if (!_chatRooms.TryGetValue(closeChatRoomDto.chatRoomId, out var closeRoom))
                 {
                     return;
                 }
-                
+
                 if (closeRoom.roomUsers.Count == 0)
                 {
                     _chatRooms.Remove(closeRoom.chatRoomId);

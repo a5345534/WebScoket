@@ -8,20 +8,29 @@ namespace WebSocketService
     {
         public static void Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
-
-            // Add services to the container.
-            builder.WebHost.UseKestrel(options =>
+            try
             {
-                options.ListenAnyIP(5000); // 监听所有网络接口上的端口 5000
-            }); ;
+                var builder = WebApplication.CreateBuilder(args);
 
-            var app = builder.Build();
-            app.UseWebSockets();
-            app.UseMiddleware<WebSocketMiddleware>(); // 使用中间件
-            app.UseHttpsRedirection();       
+                // Add services to the container.
+                builder.WebHost.UseKestrel(options =>
+                {
+                    options.ListenAnyIP(5000); // 监听所有网络接口上的端口 5000
+                }); ;
 
-            app.Run();
+                var app = builder.Build();
+                app.UseWebSockets();
+                app.UseMiddleware<WebSocketMiddleware>(); // 使用中间件
+                app.UseHttpsRedirection();
+
+                app.Run();
+
+            }
+            catch (Exception e)
+            {
+
+                Console.WriteLine(e);
+            }
         }
     }
 }
